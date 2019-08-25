@@ -92,6 +92,8 @@ void loop()
   sensor.requestTemperaturesByIndex(0);
   float temp = sensor.getTempCByIndex(0);
 
+  // if we're not armed and under arming temperature
+  // arm the alarm
   if (!armed && temp < TEMP_ARM)
   {
     armed = true;
@@ -100,6 +102,7 @@ void loop()
     #endif
   }
 
+  // over temperature
   if (armed && temp >= TEMP_ALARM)
   {
     digitalWrite(PIN_ALARM, (now / TICK_RATE) % 2);
@@ -108,12 +111,14 @@ void loop()
     #endif
   }
 
+  // calculate how many coolers should be on
   float levelTemp = TEMP_MIN + level * TEMP_INCREMENT;
   if (temp > levelTemp + TEMP_HYSTERESIS)
     ++level;
   if (temp < levelTemp)
     --level;
 
+  // turn them on
   size_t i = 0;
   for (; i < level; ++i)
     digitalWrite(PIN_COOLERS[i], 1);
