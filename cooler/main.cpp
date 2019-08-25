@@ -25,6 +25,12 @@ const uint32_t PULSE_RATE = 3000;
 // independant of PULSE RATE
 const uint32_t TICK_RATE = 500;
 
+// purge time settings
+// interval is how long between purging a specific module
+// time is how long to purge for
+const uint32_t PURGE_INTERVAL = 5 * 60 * 1000;
+const uint32_t PURGE_TIME = 10 * 1000;
+
 // the minimum temperature the system will cool to
 // in degrees celsius
 const float TEMP_MIN = 18.0f;
@@ -72,6 +78,10 @@ void setup()
   pinMode(PIN_SENSOR, INPUT);
   pinMode(PIN_ALARM, OUTPUT);
 
+  // start all off
+  for (size_t i = 0; i < NUM_COOLERS; ++i)
+    digitalWrite(PIN_COOLERS[i], 1);
+
   sensor.begin();
 }
 
@@ -118,10 +128,47 @@ void loop()
   if (temp < levelTemp)
     --level;
 
-  // turn them on
+  // turn them on (or off)
   size_t i = 0;
   for (; i < level; ++i)
-    digitalWrite(PIN_COOLERS[i], 1);
+  {
+    // don't modify purging coolers
+    if (purge == i)
+      continue;
+    digitalWrite(PIN_COOLERS[i], 0); // active LOW
+    lastOn[i] = now;
+  }
   for (; i < NUM_COOLERS; ++i)
-    digitalWrite(PIN_COOLERS[i], 0);
+  {
+    // don't modify purging coolers
+    if (purge == i)
+      continue;
+    digitalWrite(PIN_COOLERS[i], 1);
+  }
+
+  if (purge == NUM_COOLERS)
+  {
+    size_t oldest = 0;
+    for (size_t i = 1; i < NUM_COOLERS; ++i)
+    {
+      if (lastOn[i] < lastOn[oldest])
+        oldest = i;
+    }
+
+    if (lastOn[oldest] > PURGE_INTERVAL)
+    {
+      purge = oldest;
+      lastOn[purge] = now;
+      digitalWrite(PIN_COOLERS[purge], 0);
+    }
+  }
+  else
+  {
+    if (lastOn[purge] + PURGE_TIME > now)
+    {
+      lastOn[purge] = now;
+      digitalWrite(PIN_COOLERS[purge], 1);
+      purge = NUM_COOLERS;
+    }
+  }
 }
