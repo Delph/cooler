@@ -29,22 +29,25 @@ const uint32_t TICK_RATE = 500;
 // in degrees celsius
 const float TEMP_MIN = 18.0f;
 
+// how much the temperature goes up for each level
+const float TEMP_INCREMENT = 0.25f;
+
 // hysteresis in temperature
 // prevents rapid toggling of cooler pads
-const float TEMP_HYSTERESIS = 0.25f;
+const float TEMP_HYSTERESIS = 0.125f;
 
 // the temperature at which to trigger the alarm
-const float TEMP_ALARM = 24.0f
+const float TEMP_ALARM = 24.0f;
 
 // the temperature at which we arm the alarm
-const float TEMP_ARM = 19.0f
+const float TEMP_ARM = 19.0f;
 
 // variables
 // cooling level -- a la number of coolers on
 size_t level = 0;
 
 // time when cooler was last on -- for purge
-uint32_t lastOn[NUM_COOLERS] = 0;
+uint32_t lastOn[NUM_COOLERS] = {0};
 
 // current cooler on purge, if == NUM_COOLERS then none
 size_t purge = NUM_COOLERS;
@@ -68,7 +71,6 @@ void setup()
     pinMode(PIN_COOLERS[i], OUTPUT);
   pinMode(PIN_SENSOR, INPUT);
   pinMode(PIN_ALARM, OUTPUT);
-
 
   sensor.begin();
 }
@@ -106,10 +108,10 @@ void loop()
     #endif
   }
 
-  float levelTemp = TEMP_MIN + level
-  if (temp > levelTemp + TEMO_HYSTERESIS)
+  float levelTemp = TEMP_MIN + level * TEMP_INCREMENT;
+  if (temp > levelTemp + TEMP_HYSTERESIS)
     ++level;
-  if (temp < levelTempt)
+  if (temp < levelTemp)
     --level;
 
   size_t i = 0;
